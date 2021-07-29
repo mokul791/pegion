@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"html/template"
-	"log"
 	"net/http"
 	"strconv"
 )
@@ -19,9 +18,9 @@ URL Patterns			Handler					Action
 // Define a home handler function which writes a byte slice containing
 // "Hello from Pegion" as the response body.
 // It satisfies the http.Handler interface.
-func home(w http.ResponseWriter, r *http.Request) {
+func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
-		http.NotFound(w, r)
+		app.notFound(w)
 		return
 	}
 
@@ -33,36 +32,34 @@ func home(w http.ResponseWriter, r *http.Request) {
 
 	ts, err := template.ParseFiles(files...)
 	if err != nil {
-		log.Println(err.Error())
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		app.serverError(w, err)
 	}
 
 	err = ts.Execute(w, nil)
 	if err != nil {
-		log.Println(err.Error())
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		app.serverError(w, err)
 	}
 
 	// w.Write([]byte("Hello from Pegion"))
 }
 
-func showPegion(w http.ResponseWriter, r *http.Request) {
+func (app *application) showPegion(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.URL.Query().Get("id"))
 	if err != nil || id < 1 {
-		http.NotFound(w, r)
+		app.notFound(w)
 		return
 	}
 	fmt.Fprintf(w, "Displaying a specific perion with id %d...", id)
 	// w.Write([]byte("Displaying a specific pegion..."))
 }
 
-func createPegion(w http.ResponseWriter, r *http.Request) {
+func (app *application) createPegion(w http.ResponseWriter, r *http.Request) {
 	// w.Header().Set("Content-Type", "application/json")
 	if r.Method != "POST" {
-		// w.Header().Set("Allow", "POST")
+		w.Header().Set("Allow", "POST")
 		// w.WriteHeader(405)
 		// w.Write([]byte("Method not Allowed"))
-		http.Error(w, "Method not Allowed", http.StatusMethodNotAllowed)
+		app.clientError(w, http.StatusMethodNotAllowed)
 		return
 	}
 	w.Write([]byte("Create a new pegion..."))
