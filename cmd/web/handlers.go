@@ -5,6 +5,8 @@ import (
 	"html/template"
 	"net/http"
 	"strconv"
+
+	"swarmtree.com/pegion/pkg/models"
 )
 
 /*
@@ -49,7 +51,18 @@ func (app *application) showPegion(w http.ResponseWriter, r *http.Request) {
 		app.notFound(w)
 		return
 	}
-	fmt.Fprintf(w, "Displaying a specific perion with id %d...", id)
+
+	s, err := app.pegions.Get(id)
+	if err == models.ErrNoRecord {
+		app.notFound(w)
+		return
+	} else if err != nil {
+		app.serverError(w, err)
+		return
+	}
+	fmt.Fprintf(w, "Displaying your pegion with id %d...\n", id)
+	fmt.Fprintf(w, "%v", s)
+
 	// w.Write([]byte("Displaying a specific pegion..."))
 }
 
@@ -62,5 +75,17 @@ func (app *application) createPegion(w http.ResponseWriter, r *http.Request) {
 		app.clientError(w, http.StatusMethodNotAllowed)
 		return
 	}
+
+	title := "O Snail"
+	content := "Hello Snail!\nDo you feel lonely"
+	expires := "7"
+
+	id, err := app.pegions.Insert(title, content, expires)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+	http.Redirect(w, r, fmt.Sprintf("/pegion?id=%d", id), http.StatusSeeOther)
+
 	w.Write([]byte("Create a new pegion..."))
 }
